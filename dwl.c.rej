@@ -1,0 +1,10 @@
+--- dwl.c
++++ dwl.c
+@@ -331,6 +331,7 @@ static void setsel(struct wl_listener *listener, void *data);
+ static void setup(void);
+ static void spawn(const Arg *arg);
+ static void startdrag(struct wl_listener *listener, void *data);
++static void switchxkbrule(const Arg *arg);
+ static void tag(const Arg *arg);
+ static void tagmon(const Arg *arg);
+ static void tile(Monitor *m);
