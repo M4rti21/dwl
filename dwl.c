@@ -61,6 +61,7 @@
 #include <wlr/types/wlr_xdg_shell.h>
 #include <wlr/interfaces/wlr_buffer.h>
 #include <wlr/util/log.h>
+#include <wlr/util/box.h>
 #include <wlr/util/region.h>
 #include <xkbcommon/xkbcommon.h>
 #ifdef XWAYLAND
@@ -300,6 +301,8 @@ static void bufdataend(struct wlr_buffer *buffer);
 static Buffer *bufmon(Monitor *m);
 static void bufrelease(struct wl_listener *listener, void *data);
 static void buttonpress(struct wl_listener *listener, void *data);
+static void bstack(Monitor *m);
+static void bstackhoriz(Monitor *m);
 static void chvt(const Arg *arg);
 static void checkidleinhibitor(struct wlr_surface *exclude);
 static void cleanup(void);
@@ -396,6 +399,7 @@ static void setup(void);
 static void spawn(const Arg *arg);
 static void startdrag(struct wl_listener *listener, void *data);
 static int statusin(int fd, unsigned int mask, void *data);
+static void switchxkbrule(const Arg *arg);
 static void tag(const Arg *arg);
 static void tagmon(const Arg *arg);
 static void tile(Monitor *m);
@@ -481,6 +485,7 @@ static int grabcx, grabcy; /* client-relative */
 static struct wlr_seat *seat;
 static KeyboardGroup *kb_group;
 static unsigned int cursor_mode;
+static unsigned int xkb_rule_index = 0;
 static Client *grabc;
 static int grabcx, grabcy; /* client-relative */
 
@@ -1120,7 +1125,7 @@ createkeyboardgroup(void)
 
 	/* Prepare an XKB keymap and assign it to the keyboard group. */
 	context = xkb_context_new(XKB_CONTEXT_NO_FLAGS);
-	if (!(keymap = xkb_keymap_new_from_names(context, &xkb_rules,
+	if (!(keymap = xkb_keymap_new_from_names(context, &xkb_rules[xkb_rule_index],
 				XKB_KEYMAP_COMPILE_NO_FLAGS)))
 		die("failed to compile keymap");
 
@@ -3213,6 +3218,21 @@ statusin(int fd, unsigned int mask, void *data)
 }
 
 void
+switchxkbrule(const Arg *arg)
+{
+	struct xkb_context *context = xkb_context_new(XKB_CONTEXT_NO_FLAGS);
+	struct xkb_keymap *keymap;
+
+	xkb_rule_index = (xkb_rule_index + 1) % LENGTH(xkb_rules);
+	if (!(keymap = xkb_keymap_new_from_names(context, &xkb_rules[xkb_rule_index],
+			XKB_KEYMAP_COMPILE_NO_FLAGS)))
+		die("failed to compile keymap");
+	wlr_keyboard_set_keymap(&kb_group->wlr_group->keyboard, keymap);
+	xkb_keymap_unref(keymap);
+	xkb_context_unref(context);
+}
+
+void
 tag(const Arg *arg)
 {
 	Client *sel = focustop(selmon);
@@ -3859,4 +3879,85 @@ main(int argc, char *argv[])
 
 usage:
 	die("Usage: %s [-v] [-d] [-s startup command]", argv[0]);
+}
+
+static void
+bstack(Monitor *m) 
+{
+	int w, h, mh, mx, tx, ty, tw;
+	int i, n = 0;
+	Client *c;
+
+	wl_list_for_each(c, &clients, link)
+		if (VISIBLEON(c, m) && !c->isfloating)
+			n++;
+	if (n == 0)
+		return;
+
+	if (n > m->nmaster) {
+		mh = (int)round(m->nmaster ? m->mfact * m->w.height : 0);
+		tw = m->w.width / (n - m->nmaster);
+		ty = m->w.y + mh;
+	} else {
+		mh = m->w.height;
+		tw = m->w.width;
+		ty = m->w.y;
+	}
+
+	i = mx = 0;
+	tx = m-> w.x;
+	wl_list_for_each(c, &clients, link) {
+		if (!VISIBLEON(c, m) || c->isfloating)
+			continue;
+		if (i < m->nmaster) {
+			w = (m->w.width - mx) / (MIN(n, m->nmaster) - i);
+			resize(c, (struct wlr_box) { .x = m->w.x + mx, .y = m->w.y, .width = w, .height = mh }, 0);
+			mx += c->geom.width;
+		} else {
+			h = m->w.height - mh;
+			resize(c, (struct wlr_box) { .x = tx, .y = ty, .width = tw, .height = h }, 0);
+			if (tw != m->w.width)
+				tx += c->geom.width;
+		}
+		i++;
+	}
+}
+
+static void
+bstackhoriz(Monitor *m) {
+	int w, mh, mx, tx, ty, th;
+	int i, n = 0;
+	Client *c;
+
+	wl_list_for_each(c, &clients, link)
+		if (VISIBLEON(c, m) && !c->isfloating)
+			n ++;
+	if (n == 0)
+		return;
+
+	if (n > m->nmaster) {
+		mh = (int)round(m->nmaster ? m->mfact * m->w.height : 0);
+		th = (m->w.height - mh) / (n - m->nmaster);
+		ty = m->w.y + mh;
+	} else {
+		th = mh = m->w.height;
+		ty = m->w.y;
+	}
+
+	i = mx = 0;
+	tx = m-> w.x;
+	wl_list_for_each(c, &clients, link) {
+		if (!VISIBLEON(c,m) || c->isfloating)
+			continue;
+		if (i < m->nmaster) {
+			w = (m->w.width - mx) / (MIN(n, m->nmaster) - i);
+			resize(c, (struct wlr_box) { .x = m->w.x + mx, .y = m->w.y, .width = w, .height = mh }, 0);
+			mx += c->geom.width;
+		} else {
+			resize(c, (struct wlr_box) { .x = tx, .y = ty, .width = m->w.width, .height = th }, 0);
+			if (th != m->w.height)
+				ty += c->geom.height;
+		}
+		i++;
+	}
 }
