@@ -15,8 +15,6 @@ static const int trayspacing               = 4; /* Spacing between icons in syst
 static const int traymargins               = 4; /* System tray inner margins */
 /* This conforms to the xdg-protocol. Set the alpha to zero to restore the old behavior */
 static const float fullscreen_bg[]         = {0.1f, 0.1f, 0.1f, 1.0f}; /* You can also use glsl colors */
-static const char *cursor_theme            = NULL;
-static const char cursor_size[]            = "24"; /* Make sure it's a valid integer, otherwise things will break */
 static uint32_t colors[][3]                = {
 	/*               fg          bg          border    */
 	[SchemeNorm] = { 0xbbbbbbff, 0x222222ff, 0x444444ff },

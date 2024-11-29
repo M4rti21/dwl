@@ -1537,7 +1537,7 @@ void drawbar(Monitor *m) {
   pthread_mutex_lock(&mutex);
 
   /* draw status first so it can be overdrawn by tags later */
-  if (m == selmon) { /* status is only drawn on selected monitor */
+  if (m == selmon || 1) { /* status is only drawn on selected monitor */
     drwl_setscheme(m->drw, colors[SchemeNorm]);
     tw = TEXTW(m, stext) - m->lrpad + 2; /* 2px right padding */
     drwl_text(m->drw, m->b.width - tw, 0, tw, m->b.height, 0, stext, 0);
@@ -2897,12 +2897,8 @@ void setup(void) {
    * Xcursor themes to source cursor images from and makes sure that cursor
    * images are available at all scale factors on the screen (necessary for
    * HiDPI support). Scaled cursors will be loaded with each output. */
-  cursor_mgr = wlr_xcursor_manager_create(cursor_theme, atoi(cursor_size));
-  setenv("XCURSOR_SIZE", cursor_size, 1);
-  if (cursor_theme)
-    setenv("XCURSOR_THEME", cursor_theme, 1);
-  else
-    unsetenv("XCURSOR_THEME");
+  cursor_mgr = wlr_xcursor_manager_create(NULL, 24);
+  setenv("XCURSOR_SIZE", "24", 1);
 
   /*
    * wlr_cursor *only* displays an image on screen. It does not move around

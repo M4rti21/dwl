@@ -1,10 +1,17 @@
 --- dwl.c
 +++ dwl.c
-@@ -331,6 +331,7 @@ static void setsel(struct wl_listener *listener, void *data);
- static void setup(void);
- static void spawn(const Arg *arg);
- static void startdrag(struct wl_listener *listener, void *data);
-+static void switchxkbrule(const Arg *arg);
- static void tag(const Arg *arg);
- static void tagmon(const Arg *arg);
- static void tile(Monitor *m);
+@@ -2522,12 +2522,8 @@ setup(void)
+ 	 * Xcursor themes to source cursor images from and makes sure that cursor
+ 	 * images are available at all scale factors on the screen (necessary for
+ 	 * HiDPI support). Scaled cursors will be loaded with each output. */
+-	cursor_mgr = wlr_xcursor_manager_create(cursor_theme, atoi(cursor_size));
+-	setenv("XCURSOR_SIZE", cursor_size, 1);
+-	if (cursor_theme)
+-		setenv("XCURSOR_THEME", cursor_theme, 1);
+-	else
+-		unsetenv("XCURSOR_THEME");
++	cursor_mgr = wlr_xcursor_manager_create(NULL, 24);
++	setenv("XCURSOR_SIZE", "24", 1);
+ 
+ 	/*
+ 	 * wlr_cursor *only* displays an image on screen. It does not move around
