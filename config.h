@@ -110,7 +110,7 @@ static const int repeat_delay = 300;
 static const int tap_to_click = 1;
 static const int tap_and_drag = 1;
 static const int drag_lock = 1;
-static const int natural_scrolling = 0;
+static const int natural_scrolling = 1;
 static const int disable_while_typing = 1;
 static const int left_handed = 0;
 static const int middle_button_emulation = 0;
@@ -234,9 +234,8 @@ static const Key keys[] = {
 
 	{ MODKEY|SHIFTKEY,  XKB_KEY_H,          tagmon,             {.i = WLR_DIRECTION_LEFT} },
 	{ MODKEY|SHIFTKEY,  XKB_KEY_L,          tagmon,             {.i = WLR_DIRECTION_RIGHT} },
-	// { MODKEY,           XKB_KEY_i,          incnmaster,         {.i = +1} },
-	// { MODKEY,           XKB_KEY_d,          incnmaster,         {.i = -1} },
-	// { MODKEY,           XKB_KEY_Tab,        view,               {0} },
+	{ MODKEY,           XKB_KEY_a,          incnmaster,         {.i = +1} },
+	{ MODKEY,           XKB_KEY_x,          incnmaster,         {.i = -1} },
     
     // Views
 	{ MODKEY,           XKB_KEY_0,          view,               {.ui = ~0} },
@@ -246,11 +245,7 @@ static const Key keys[] = {
 	{ MODKEY,           XKB_KEY_w,          killclient,         {0} },
 	{ MODKEY,           XKB_KEY_t,          togglefloating,     {0} },
 	{ MODKEY,           XKB_KEY_f,          togglefullscreen,   {0} },
-	// { MODKEY,           XKB_KEY_t,          setlayout,          {.v = &layouts[0]} },
-	// { MODKEY,           XKB_KEY_f,          setlayout,          {.v = &layouts[1]} },
-	// { MODKEY,           XKB_KEY_m,          setlayout,          {.v = &layouts[2]} },
-	// { MODKEY,           XKB_KEY_space,      setlayout,          {0} },
-	// { MODKEY|SHIFTKEY,  XKB_KEY_parenright, tag,                {.ui = ~0} },
+	{ MODKEY,           XKB_KEY_y,          togglebar,          {0} },
 
 	TAGKEYS(XKB_KEY_1,  XKB_KEY_exclam,         0),
 	TAGKEYS(XKB_KEY_2,  XKB_KEY_at,             1),
