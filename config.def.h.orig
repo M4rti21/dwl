@@ -11,12 +11,11 @@ static const int showbar                   = 1; /* 0 means no bar */
 static const int topbar                    = 1; /* 0 means bottom bar */
 static const char *fonts[]                 = {"monospace:size=10"};
 static const float rootcolor[]             = COLOR(0x000000ff);
-static const int trayspacing               = 4; /* Spacing between icons in system tray */
-static const int traymargins               = 4; /* System tray inner margins */
 /* This conforms to the xdg-protocol. Set the alpha to zero to restore the old behavior */
 static const float fullscreen_bg[]         = {0.1f, 0.1f, 0.1f, 1.0f}; /* You can also use glsl colors */
 static const char *cursor_theme            = NULL;
 static const char cursor_size[]            = "24"; /* Make sure it's a valid integer, otherwise things will break */
+
 static uint32_t colors[][3]                = {
 	/*               fg          bg          border    */
 	[SchemeNorm] = { 0xbbbbbbff, 0x222222ff, 0x444444ff },
@@ -64,12 +63,16 @@ static const MonitorRule monrules[] = {
 };
 
 /* keyboard */
-static const struct xkb_rule_names xkb_rules = {
-	/* can specify fields: rules, model, layout, variant, options */
-	/* example:
-	.options = "ctrl:nocaps",
-	*/
-	.options = NULL,
+static const struct xkb_rule_names xkb_rules[] = {
+	{
+		/* can specify fields: rules, model, layout, variant, options */
+		.layout = "us",
+		.options = NULL,
+	},
+	{
+		.layout = "us",
+		.options = "compose:ralt",
+	},
 };
 
 static const int repeat_rate = 25;
@@ -162,6 +165,7 @@ static const Key keys[] = {
 	{ MODKEY,                    XKB_KEY_period,     focusmon,       {.i = WLR_DIRECTION_RIGHT} },
 	{ MODKEY|WLR_MODIFIER_SHIFT, XKB_KEY_less,       tagmon,         {.i = WLR_DIRECTION_LEFT} },
 	{ MODKEY|WLR_MODIFIER_SHIFT, XKB_KEY_greater,    tagmon,         {.i = WLR_DIRECTION_RIGHT} },
+	{ MODKEY,                    XKB_KEY_w,          switchxkbrule,  {0} },
 	TAGKEYS(          XKB_KEY_1, XKB_KEY_exclam,                     0),
 	TAGKEYS(          XKB_KEY_2, XKB_KEY_at,                         1),
 	TAGKEYS(          XKB_KEY_3, XKB_KEY_numbersign,                 2),

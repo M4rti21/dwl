@@ -149,7 +149,6 @@ LIBINPUT_CONFIG_TAP_MAP_LMR -- 1/2/3 finger tap maps to left/middle/right
 */
 static const enum libinput_config_tap_button_map button_map = LIBINPUT_CONFIG_TAP_MAP_LRM;
 
-/* If you want to use the windows key for MODKEY, use WLR_MODIFIER_LOGO */
 #define MODKEY WLR_MODIFIER_LOGO
 #define CTRLKEY WLR_MODIFIER_CTRL
 #define ALTKEY WLR_MODIFIER_ALT
@@ -164,8 +163,10 @@ static const enum libinput_config_tap_button_map button_map = LIBINPUT_CONFIG_TA
 /* helper for spawning shell commands in the pre dwm-5.0 fashion */
 #define SHCMD(cmd) { .v = (const char*[]){ "/bin/sh", "-c", cmd, NULL } }
 
+// APPS
 #define TERMINAL "foot"
 #define BROWSER "librewolf"
+#define BCTL "busctl", "--user", "set-property", "rs.wl-gammarelay", "/", "rs.wl.gammarelay"
 
 /* commands */
 static const char *termcmd[]     = { TERMINAL, NULL };
@@ -178,8 +179,6 @@ static const char *browser_p[]   = { BROWSER, "-p", "Personal", NULL };
 static const char *browser_w[]   = { BROWSER, "-p", "Work", NULL };
 static const char *browser_s[]   = { BROWSER, "-p", "Study", NULL };
 
-#define BCTL "busctl", "--user", "set-property", "rs.wl-gammarelay", "/", "rs.wl.gammarelay"
-
 static const char *light_top[] = { BCTL, "Brightness", "d", "1", NULL };
 static const char *light_mid[] = { BCTL, "Brightness", "d", "0.6", NULL };
 static const char *light_low[] = { BCTL, "Brightness", "d", "0.2", NULL };
@@ -187,6 +186,15 @@ static const char *light_low[] = { BCTL, "Brightness", "d", "0.2", NULL };
 static const char *night_top[] = { BCTL, "Temperature", "q", "6000", NULL };
 static const char *night_mid[] = { BCTL, "Temperature", "q", "4000", NULL };
 static const char *night_low[] = { BCTL, "Temperature", "q", "2500", NULL };
+
+static const char *clipboard[] = { "clipboard", NULL };
+
+static const char *book_p[]    = { "book", "personal", NULL };
+static const char *book_w[]    = { "book", "work", NULL };
+static const char *book_s[]    = { "book", "study", NULL };
+
+static const char *ss_region[] = { "screenshot", NULL };
+static const char *ss_screen[] = { "screenshot", "-f", NULL };
 
 static const Key keys[] = {
 	// Note that Shift changes certain key codes: c -> C, 2 -> at, etc.
@@ -205,12 +213,9 @@ static const Key keys[] = {
 	{ MODKEY,           XKB_KEY_space,      switchxkbrule,      {0} },
 
     // Actions
-	{ MODKEY,           XKB_KEY_d,          spawn,              SHCMD("book personal") },
-	{ MODKEY|SHIFTKEY,  XKB_KEY_D,          spawn,              SHCMD("book work") },
-	{ MODKEY|CTRLKEY,   XKB_KEY_d,          spawn,              SHCMD("book study") },
-
-    { MODKEY|SHIFTKEY,  XKB_KEY_S,          spawn,              SHCMD("screenshot") },
-    { MODKEY|CTRLKEY,   XKB_KEY_s,          spawn,              SHCMD("screenshot -f") },
+	{ MODKEY,           XKB_KEY_d,          spawn,              {.v = book_p} },
+	{ MODKEY|SHIFTKEY,  XKB_KEY_D,          spawn,              {.v = book_w} },
+	{ MODKEY|CTRLKEY,   XKB_KEY_d,          spawn,              {.v = book_s} },
 
     { MODKEY|SHIFTKEY,  XKB_KEY_B,          spawn,              {.v = light_top} },
     { MODKEY,           XKB_KEY_b,          spawn,              {.v = light_mid} },
@@ -221,7 +226,11 @@ static const Key keys[] = {
     { MODKEY|CTRLKEY,   XKB_KEY_n,          spawn,              {.v = night_low} },
 
     { CTRLKEY|SHIFTKEY, XKB_KEY_Escape,     spawn,              {.v = taskmgr} },
-    { MODKEY,           XKB_KEY_c,          spawn,              SHCMD("clipboard") },
+
+    { MODKEY,           XKB_KEY_c,          spawn,              {.v = clipboard} },
+
+    { MODKEY|SHIFTKEY,  XKB_KEY_S,          spawn,              {.v = ss_region} },
+    { MODKEY|CTRLKEY,   XKB_KEY_s,          spawn,              {.v = ss_screen} },
 
 	// { MODKEY,           XKB_KEY_m,          focusmaster,        {0} },
 	{ MODKEY|SHIFTKEY,  XKB_KEY_M,          zoom,               {0} },  // make master
