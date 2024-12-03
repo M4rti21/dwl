@@ -8,8 +8,8 @@ static const int sloppyfocus               = 0;  /* focus follows mouse */
 static const int bypass_surface_visibility = 0;  /* 1 means idle inhibitors will disable idle tracking even if it's surface isn't visible  */
 static const unsigned int borderpx         = 2;  /* border pixel of windows */
 static const int showbar                   = 1; /* 0 means no bar */
-static const int topbar                    = 1; /* 0 means bottom bar */
-static const char *fonts[]                 = {"IBM Plex Mono:style=Bold:size=8:antialias=false"};
+static const int topbar                    = 0; /* 0 means bottom bar */
+static const char *fonts[]                 = {"IBM Plex Mono:style=Medium:size=8"};
 static const float rootcolor[]             = COLOR(0x000000ff);
 static const int trayspacing               = 4; /* Spacing between icons in system tray */
 static const int traymargins               = 4; /* System tray inner margins */
@@ -20,9 +20,13 @@ static const char cursor_size[]            = "42"; /* Make sure it's a valid int
 
 static uint32_t colors[][3]                = {
 	/*               fg          bg          border    */
-	[SchemeNorm] = { 0xbbbbbbff, 0x222222ff, 0x444444ff },
-	[SchemeSel]  = { 0xeeeeeeff, 0x005577ff, 0x770000ff },
-	[SchemeUrg]  = { 0,          0,          0x000077ff },
+	// [SchemeNorm] = { 0xbbbbbbff, 0x222222ff, 0x444444ff }, // default
+	// [SchemeSel]  = { 0xeeeeeeff, 0x005577ff, 0x770000ff }, // default
+	[SchemeNorm] = { 0xbbbbbbff, 0x0e0e0eff, 0x222222ff }, // custom
+	[SchemeSel]  = { 0xeeeeeeff, 0x333333ff, 0x770000ff }, // custom
+	// [SchemeNorm] = { 0xffffffff, 0x1e1e1eff, 0x444444ff }, // adw
+	// [SchemeSel]  = { 0xffffffff, 0x303030ff, 0x78aeedff }, // adw
+	[SchemeUrg]  = { 0,          0,          0x007777ff },
 };
 
 /* tagging - TAGCOUNT must be no greater than 31 */
@@ -54,7 +58,7 @@ static const Rule rules[] = {
 	{ "thunderbird",        NULL,       T9,         0,      -1 },
     
     // Game Launcher
-	{ "steam",              NULL,       T7,         0,      -1 },
+	{ NULL,                 "Steam",    T7,         0,      -1 },
 	{ "heroic",             NULL,       T7,         0,      -1 },
     
     // Games
@@ -282,6 +286,6 @@ static const Button buttons[] = {
 	{ ClkClient,   MODKEY, BTN_LEFT,   moveresize,     {.ui = CurMove} },
 	{ ClkClient,   MODKEY, BTN_MIDDLE, togglefloating, {0} },
 	{ ClkClient,   MODKEY, BTN_RIGHT,  moveresize,     {.ui = CurResize} },
-	{ ClkTagBar,   0,      BTN_LEFT,   view,           {0} },
-	{ ClkTagBar,   0,      BTN_RIGHT,  toggleview,     {0} },
+	// { ClkTagBar,   0,      BTN_LEFT,   view,           {0} },
+	// { ClkTagBar,   0,      BTN_RIGHT,  toggleview,     {0} },
 };
