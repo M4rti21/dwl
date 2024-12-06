@@ -73,22 +73,9 @@
 #include "drwl.h"
 #include "util.h"
 
-#include <gdk/gdk.h>
-#include <gio/gio.h>
-#include <glib-object.h>
-#include <glib.h>
-#include <gtk/gtk.h>
-#include <gtk4-layer-shell.h>
-#include <pthread.h>
-#include <snsystray.h>
-
 /* macros */
-#ifndef MAX
 #define MAX(A, B) ((A) > (B) ? (A) : (B))
-#endif /* MAX */
-#ifndef MIN
 #define MIN(A, B) ((A) < (B) ? (A) : (B))
-#endif /* MIN */
 #define CLEANMASK(mask) (mask & ~WLR_MODIFIER_CAPS)
 #define VISIBLEON(C, M)                                                        \
   ((M) && (C)->mon == (M) && ((C)->tags & (M)->tagset[(M)->seltags]))
@@ -366,16 +353,6 @@ static void focusstack(const Arg *arg);
 static Client *focustop(Monitor *m);
 static void fullscreennotify(struct wl_listener *listener, void *data);
 static void gpureset(struct wl_listener *listener, void *data);
-static void gtkactivate(GtkApplication *app, void *data);
-static void gtkclosewindows(void *data, void *udata);
-static void gtkhandletogglebarmsg(void *data);
-static void gtkhandlewidthnotify(SnSystray *systray, GParamSpec *pspec,
-                                 void *data);
-static void *gtkinit(void *data);
-static void gtkspawnstray(Monitor *m, GtkApplication *app);
-static void gtkterminate(void *data);
-static void gtktoggletray(void *data, void *udata);
-static GdkMonitor *gtkwlrtogdkmon(Monitor *wlrmon);
 static void handlesig(int signo);
 static void incnmaster(const Arg *arg);
 static void inputdevice(struct wl_listener *listener, void *data);
@@ -436,7 +413,7 @@ static void unlocksession(struct wl_listener *listener, void *data);
 static void unmaplayersurfacenotify(struct wl_listener *listener, void *data);
 static void unmapnotify(struct wl_listener *listener, void *data);
 static void updatemons(struct wl_listener *listener, void *data);
-static void updatebar(Monitor *m, int traywidth);
+static void updatebar(Monitor *m);
 static void updatetitle(struct wl_listener *listener, void *data);
 static void urgent(struct wl_listener *listener, void *data);
 static void view(const Arg *arg);
@@ -452,9 +429,7 @@ static int regex_match(const char *pattern, const char *str);
 /* variables */
 static const char broken[] = "broken";
 static pid_t child_pid = -1;
-static pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
-static pthread_t gtkthread; /* Gtk functions are only allowed to be called from
-                               this thread */
+
 static int locked;
 static void *exclusive_focus;
 static struct wl_display *dpy;
@@ -1234,7 +1209,7 @@ void createmon(struct wl_listener *listener, void *data) {
 
   m->scene_buffer = wlr_scene_buffer_create(layers[LyrBottom], NULL);
   m->scene_buffer->point_accepts_input = baracceptsinput;
-  updatebar(m, 0);
+  updatebar(m);
 
   wl_list_insert(&mons, &m->link);
   drawbars();
@@ -1534,8 +1509,6 @@ void drawbar(Monitor *m) {
   if (!(buf = bufmon(m)))
     return;
 
-  pthread_mutex_lock(&mutex);
-
   /* draw status first so it can be overdrawn by tags later */
   if (m == selmon || 1) { /* status is only drawn on selected monitor */
     drwl_setscheme(m->drw, colors[SchemeNorm]);
@@ -1588,7 +1561,6 @@ void drawbar(Monitor *m) {
       m->m.y + (topbar ? 0 : m->m.height - m->b.real_height));
   wlr_scene_buffer_set_buffer(m->scene_buffer, &buf->base);
   wlr_buffer_unlock(&buf->base);
-  pthread_mutex_unlock(&mutex);
 }
 
 void drawbars(void) {
@@ -1727,151 +1699,6 @@ void fullscreennotify(struct wl_listener *listener, void *data) {
   setfullscreen(c, client_wants_fullscreen(c));
 }
 
-void gtkactivate(GtkApplication *app, void *data) {
-  GdkDisplay *display;
-  GtkCssProvider *cssp;
-  char csss[64];
-  Monitor *m;
-  uint32_t bgcolor;
-
-  bgcolor = colors[SchemeNorm][1] >> 8;
-  display = gdk_display_get_default();
-  cssp = gtk_css_provider_new();
-  sprintf(csss, "window{background-color:#%06x;}", bgcolor);
-  gtk_css_provider_load_from_string(cssp, csss);
-  gtk_style_context_add_provider_for_display(display, GTK_STYLE_PROVIDER(cssp),
-                                             GTK_STYLE_PROVIDER_PRIORITY_USER);
-
-  wl_list_for_each(m, &mons, link) gtkspawnstray(m, app);
-
-  g_object_unref(cssp);
-}
-
-void gtkclosewindows(void *data, void *udata) {
-  GtkWindow *window = GTK_WINDOW(data);
-
-  gtk_window_close(window);
-}
-
-void gtkhandletogglebarmsg(void *data) {
-  GtkApplication *app;
-  GList *windows;
-
-  app = GTK_APPLICATION(g_application_get_default());
-  windows = gtk_application_get_windows(app);
-  g_list_foreach(windows, gtktoggletray, data);
-}
-
-void gtkhandlewidthnotify(SnSystray *systray, GParamSpec *pspec, void *data) {
-  Monitor *m = (Monitor *)data;
-  int traywidth;
-
-  traywidth = sn_systray_get_width(systray);
-
-  updatebar(m, traywidth);
-  drawbar(m);
-}
-
-void *gtkinit(void *data) {
-  GtkApplication *app =
-      gtk_application_new("org.dwl.systray", G_APPLICATION_NON_UNIQUE);
-  g_signal_connect(app, "activate", G_CALLBACK(gtkactivate), NULL);
-  g_application_run(G_APPLICATION(app), 0, NULL);
-
-  g_object_unref(app);
-
-  return NULL;
-}
-
-void gtkspawnstray(Monitor *m, GtkApplication *app) {
-  GdkMonitor *gdkmon;
-  GtkWindow *window;
-  SnSystray *systray;
-  const char *conn;
-  gboolean anchors[4];
-  int iconsize, tray_init_width, tray_height;
-
-  gdkmon = gtkwlrtogdkmon(m);
-  if (gdkmon == NULL)
-    die("Failed to get gdkmon");
-
-  conn = gdk_monitor_get_connector(gdkmon);
-  iconsize = m->b.real_height - 2 * traymargins;
-  tray_height = m->b.real_height;
-  tray_init_width = m->b.real_height;
-
-  if (topbar) {
-    anchors[GTK_LAYER_SHELL_EDGE_LEFT] = false;
-    anchors[GTK_LAYER_SHELL_EDGE_RIGHT] = true;
-    anchors[GTK_LAYER_SHELL_EDGE_TOP] = true;
-    anchors[GTK_LAYER_SHELL_EDGE_BOTTOM] = false;
-  } else {
-    anchors[GTK_LAYER_SHELL_EDGE_LEFT] = false;
-    anchors[GTK_LAYER_SHELL_EDGE_RIGHT] = true;
-    anchors[GTK_LAYER_SHELL_EDGE_TOP] = false;
-    anchors[GTK_LAYER_SHELL_EDGE_BOTTOM] = true;
-  }
-
-  systray = sn_systray_new(iconsize, traymargins, trayspacing, conn);
-  window = GTK_WINDOW(gtk_window_new());
-
-  gtk_window_set_default_size(window, tray_init_width, tray_height);
-  gtk_window_set_child(window, GTK_WIDGET(systray));
-  gtk_window_set_application(window, app);
-  gtk_layer_init_for_window(window);
-  gtk_layer_set_layer(window, GTK_LAYER_SHELL_LAYER_BOTTOM);
-  gtk_layer_set_exclusive_zone(window, -1);
-  gtk_layer_set_monitor(window, gdkmon);
-
-  for (int j = 0; j < GTK_LAYER_SHELL_EDGE_ENTRY_NUMBER; j++) {
-    gtk_layer_set_anchor(window, j, anchors[j]);
-  }
-
-  updatebar(m, tray_init_width);
-  g_signal_connect(systray, "notify::curwidth",
-                   G_CALLBACK(gtkhandlewidthnotify), m);
-  gtk_window_present(window);
-}
-
-void gtkterminate(void *data) {
-  GtkApplication *app;
-  GList *windows;
-
-  app = GTK_APPLICATION(g_application_get_default());
-  windows = gtk_application_get_windows(app);
-  g_list_foreach(windows, gtkclosewindows, NULL);
-}
-
-GdkMonitor *gtkwlrtogdkmon(Monitor *wlrmon) {
-  GdkMonitor *gdkmon = NULL;
-
-  GListModel *gdkmons;
-  GdkDisplay *display;
-  const char *gdkname;
-  const char *wlrname;
-  unsigned int i;
-
-  wlrname = wlrmon->wlr_output->name;
-  display = gdk_display_get_default();
-  gdkmons = gdk_display_get_monitors(display);
-
-  for (i = 0; i < g_list_model_get_n_items(gdkmons); i++) {
-    GdkMonitor *mon = g_list_model_get_item(gdkmons, i);
-    gdkname = gdk_monitor_get_connector(mon);
-    if (strcmp(wlrname, gdkname) == 0)
-      gdkmon = mon;
-  }
-
-  return gdkmon;
-}
-
-void gtktoggletray(void *data, void *udata) {
-  GtkWidget *widget = GTK_WIDGET(data);
-  int *pbarvisible = (int *)udata;
-  int barvisible = GPOINTER_TO_INT(pbarvisible);
-
-  gtk_widget_set_visible(widget, barvisible);
-}
 
 void gpureset(struct wl_listener *listener, void *data) {
   struct wlr_renderer *old_drw = drw;
@@ -2448,8 +2275,6 @@ void powermgrsetmode(struct wl_listener *listener, void *data) {
 }
 
 void quit(const Arg *arg) {
-  g_idle_add_once(gtkterminate, NULL);
-  pthread_join(gtkthread, NULL);
   wl_display_terminate(dpy);
 }
 
@@ -2976,9 +2801,6 @@ void setup(void) {
             "failed to setup XWayland X server, continuing without it\n");
   }
 #endif
-
-  // Gtk functions are only allowed to be called from this thread.
-  pthread_create(&gtkthread, NULL, &gtkinit, NULL);
 }
 
 void spawn(const Arg *arg) {
@@ -3093,21 +2915,9 @@ void tile(Monitor *m) {
 }
 
 void togglebar(const Arg *arg) {
-  int barvisible;
-  int *pbarvisible;
-
   wlr_scene_node_set_enabled(&selmon->scene_buffer->node,
                              !selmon->scene_buffer->node.enabled);
   arrangelayers(selmon);
-
-  // Notify gtkthread
-  if (selmon->scene_buffer->node.enabled)
-    barvisible = 1;
-  else
-    barvisible = 0;
-
-  pbarvisible = GINT_TO_POINTER(barvisible);
-  g_idle_add_once(gtkhandletogglebarmsg, pbarvisible);
 }
 
 void togglefloating(const Arg *arg) {
@@ -3290,7 +3100,7 @@ void updatemons(struct wl_listener *listener, void *data) {
   if (stext[0] == '\0')
     strncpy(stext, "dwl-" VERSION, sizeof(stext));
   wl_list_for_each(m, &mons, link) {
-    updatebar(m, 0);
+    updatebar(m);
     drawbar(m);
   }
 
@@ -3304,14 +3114,14 @@ void updatemons(struct wl_listener *listener, void *data) {
   wlr_output_manager_v1_set_configuration(output_mgr, config);
 }
 
-void updatebar(Monitor *m, int traywidth) {
+void updatebar(Monitor *m) {
   size_t i;
   int rw, rh;
   char fontattrs[12];
 
   wlr_output_transformed_resolution(m->wlr_output, &rw, &rh);
   m->b.width = rw;
-  m->b.real_width = (int)((float)m->b.width / m->wlr_output->scale) - traywidth;
+  m->b.real_width = (int)((float)m->b.width / m->wlr_output->scale);
 
   wlr_scene_node_set_enabled(&m->scene_buffer->node,
                              m->wlr_output->enabled ? showbar : 0);

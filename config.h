@@ -30,6 +30,7 @@ static uint32_t colors[][3]                = {
 };
 
 /* tagging - TAGCOUNT must be no greater than 31 */
+//                                          󰸿    󰣖        󰻞    
 static char *tags[] = { "1", "2", "3", "4", "5", "6", "7", "8", "9" };
 
 #define T1 1 << 0
@@ -55,7 +56,7 @@ static const Rule rules[] = {
 	{ "vesktop",            NULL,       T8,         0,      -1 },
 	{ "teams-for-linux",    NULL,       T8,         0,      -1 },
 	{ "zapzap",             NULL,       T8,         0,      -1 },
-	{ "thunderbird",        NULL,       T9,         0,      -1 },
+	{ "thunderbird-bin",    NULL,       T9,         0,      -1 },
     
     // Game Launcher
 	{ NULL,                 "Steam",    T7,         0,      -1 },
@@ -64,6 +65,8 @@ static const Rule rules[] = {
     // Games
 	{ "^steam_app_.*$",     NULL,       T5,         0,      -1 },
 	{ "osu!",               NULL,       T5,         0,      -1 },
+	{ "osu!.exe",           NULL,       T5,         0,      -1 },
+	{ "wine64",             NULL,       T5,         0,      -1 },
 	{ "supertuxcart",       NULL,       T5,         0,      -1 },
 	{ NULL,                 "TETR.IO",  T5,         0,      -1 },
 
@@ -238,15 +241,19 @@ static const Key keys[] = {
 
 	// { MODKEY,           XKB_KEY_m,          focusmaster,        {0} },
 	{ MODKEY|SHIFTKEY,  XKB_KEY_M,          zoom,               {0} },  // make master
+
 	{ MODKEY,           XKB_KEY_j,          focusstack,         {.i = +1} },
 	{ MODKEY,           XKB_KEY_k,          focusstack,         {.i = -1} },
+	{ MODKEY|SHIFTKEY,  XKB_KEY_J,          movestack,          {.i = +1} },
+	{ MODKEY|SHIFTKEY,  XKB_KEY_K,          movestack,          {.i = -1} },
+
 	{ MODKEY,           XKB_KEY_h,          focusmon,           {.i = WLR_DIRECTION_LEFT} },
 	{ MODKEY,           XKB_KEY_l,          focusmon,           {.i = WLR_DIRECTION_RIGHT} },
+	{ MODKEY|SHIFTKEY,  XKB_KEY_H,          tagmon,             {.i = WLR_DIRECTION_LEFT} },
+	{ MODKEY|SHIFTKEY,  XKB_KEY_L,          tagmon,             {.i = WLR_DIRECTION_RIGHT} },
 	{ MODKEY|CTRLKEY,   XKB_KEY_h,          setmfact,           {.f = -0.05f} },
 	{ MODKEY|CTRLKEY,   XKB_KEY_l,          setmfact,           {.f = +0.05f} },
 
-	{ MODKEY|SHIFTKEY,  XKB_KEY_H,          tagmon,             {.i = WLR_DIRECTION_LEFT} },
-	{ MODKEY|SHIFTKEY,  XKB_KEY_L,          tagmon,             {.i = WLR_DIRECTION_RIGHT} },
 	{ MODKEY,           XKB_KEY_a,          incnmaster,         {.i = +1} },
 	{ MODKEY,           XKB_KEY_x,          incnmaster,         {.i = -1} },
     
@@ -286,6 +293,6 @@ static const Button buttons[] = {
 	{ ClkClient,   MODKEY, BTN_LEFT,   moveresize,     {.ui = CurMove} },
 	{ ClkClient,   MODKEY, BTN_MIDDLE, togglefloating, {0} },
 	{ ClkClient,   MODKEY, BTN_RIGHT,  moveresize,     {.ui = CurResize} },
-	// { ClkTagBar,   0,      BTN_LEFT,   view,           {0} },
-	// { ClkTagBar,   0,      BTN_RIGHT,  toggleview,     {0} },
+	{ ClkTagBar,   0,      BTN_LEFT,   view,           {0} },
+	{ ClkTagBar,   0,      BTN_RIGHT,  toggleview,     {0} },
 };
