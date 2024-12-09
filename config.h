@@ -48,30 +48,43 @@ static int log_level = WLR_ERROR;
 
 /* NOTE: ALWAYS keep a rule declared even if you don't use rules (e.g leave at least one example) */
 static const Rule rules[] = {
-	/* app_id               title       tags mask   float   monitor */
+	/* app_id             title         tags mask     isfloating   monitor scratchkey */
 
-	{ "obs",                NULL,       T7,         0,      -1 },
+    // Entertainment
+    // 1. Media
+	{ "com.stremio.stremio",NULL,       T5,         0,      -1,     0 },
+    // 2. Games
+	{ "osu!",               NULL,       T5,         0,      -1,     0 },
+	{ "osu!.exe",           NULL,       T5,         0,      -1,     0 },
+	{ "wine64",             NULL,       T5,         0,      -1,     0 },
+	{ "supertuxcart",       NULL,       T5,         0,      -1,     0 },
+	{ "^steam_app_.*$",     NULL,       T5,         0,      -1,     0 },
+	{ "sober",              NULL,       T5,         0,      -1,     0 },
+	{ "factorio",           NULL,       T5,         0,      -1,     0 },
+	{ "portal2_linux",      NULL,       T5,         0,      -1,     0 },
+	{ "rocketleague.exe",   NULL,       T5,         0,      -1,     0 },
+	{ "fall_guys_client_game.exe", NULL,T5,         0,      -1,     0 },
+	{ NULL,                 "TETR.IO",  T5,         0,      -1,     0 },
 
-    // Communication
-	{ "vesktop",            NULL,       T8,         0,      -1 },
-	{ "teams-for-linux",    NULL,       T8,         0,      -1 },
-	{ "zapzap",             NULL,       T8,         0,      -1 },
-	{ "thunderbird-bin",    NULL,       T9,         0,      -1 },
+    // Background
+	{ "obs",                NULL,       T6,         0,      -1,     0 },
     
     // Game Launcher
-	{ NULL,                 "Steam",    T7,         0,      -1 },
-	{ "heroic",             NULL,       T7,         0,      -1 },
+	{ NULL,                 "Steam",    T7,         0,      -1,     0 },
+	{ "heroic",             NULL,       T7,         0,      -1,     0 },
     
-    // Games
-	{ "^steam_app_.*$",     NULL,       T5,         0,      -1 },
-	{ "osu!",               NULL,       T5,         0,      -1 },
-	{ "osu!.exe",           NULL,       T5,         0,      -1 },
-	{ "wine64",             NULL,       T5,         0,      -1 },
-	{ "supertuxcart",       NULL,       T5,         0,      -1 },
-	{ NULL,                 "TETR.IO",  T5,         0,      -1 },
+    // Communication
+	{ "vesktop",            NULL,       T8,         0,      -1,     0 },
+	{ "teams-for-linux",    NULL,       T8,         0,      -1,     0 },
+	{ "zapzap",             NULL,       T8,         0,      -1,     0 },
+	{ "thunderbird-bin",    NULL,       T9,         0,      -1,     0 },
 
     //--------------------------------------------------------//
-	{ "e_xample",           NULL,       T8,         0,      -1 }
+    
+	{ NULL,                 "pulsemixer",0,         1,      -1,     'v' },
+	{ NULL,                 "Bitwarden",0,          1,      -1,     'p' },
+	{ "spotube",            NULL,       0,          1,      -1,     'm' },
+	{ "e_xample",           NULL,       T1,         0,      -1,     0  }
 };
 
 /* layout(s) */
@@ -203,6 +216,13 @@ static const char *book_s[]    = { "book", "study", NULL };
 static const char *ss_region[] = { "screenshot", NULL };
 static const char *ss_screen[] = { "screenshot", "-f", NULL };
 
+#define toggle_sp focusortogglematchingscratch
+
+/* named scratchpads - First arg only serves to match against key in rules*/
+static const char *volume[]     = { "v", TERMINAL, "-T", "pulsemixer", "-e", "pulsemixer", NULL };
+static const char *password[]   = { "p", "flatpak", "run", "com.bitwarden.desktop", NULL };
+static const char *music[]      = { "m", "flatpak", "run", "com.github.KRTirtho.Spotube", NULL };
+
 static const Key keys[] = {
 	// Note that Shift changes certain key codes: c -> C, 2 -> at, etc.
     //modifier          key                 function            argument
@@ -218,6 +238,11 @@ static const Key keys[] = {
 	{ MODKEY|CTRLKEY,   XKB_KEY_i,          spawn,              {.v = browser_s} },
 
 	{ MODKEY,           XKB_KEY_space,      switchxkbrule,      {0} },
+    
+    // Scratchpads
+	{ MODKEY,           XKB_KEY_v,          toggle_sp,          {.v = volume } },
+	{ MODKEY,           XKB_KEY_p,          toggle_sp,          {.v = password} },
+	{ MODKEY,           XKB_KEY_m,          toggle_sp,          {.v = music} },
 
     // Actions
 	{ MODKEY,           XKB_KEY_d,          spawn,              {.v = book_p} },
